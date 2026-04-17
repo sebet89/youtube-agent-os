@@ -1,57 +1,128 @@
 # YouTube Agent OS
 
-Sistema em Python 3.12 para criação assistida de vídeos para YouTube, com geração de conteúdo, preparo de assets, render, revisão humana, upload privado, publicação e analytics básicos.
+YouTube Agent OS is a Python application for assisted YouTube video production.
 
-## Visão geral
+It combines content generation, media preparation, rendering, human review, private upload, publication, and basic analytics in one workflow. The goal is simple: reduce the operational friction between an idea and a publishable YouTube video.
 
-O projeto foi desenhado para operar como um “operating system” leve para um fluxo editorial de YouTube:
+## Why this project exists
 
-- conecta um canal via OAuth 2.0 oficial do Google
-- cria projetos a partir de uma ideia base
-- gera briefing, roteiro, título, descrição, tags e plano de produção
-- prepara assets como thumbnail, locução, legendas e trilha
-- renderiza vídeo
-- faz upload inicial como `private`
-- exige revisão humana antes da publicação
-- acompanha analytics básicos do vídeo
+Publishing a video usually means jumping across too many tools:
 
-Hoje ele já funciona bem como MVP operacional local e está estruturado para trocar providers locais por providers reais de IA e mídia quando fizer sentido.
+- one place for ideas
+- another for scripts
+- another for thumbnails
+- another for rendering
+- another for upload and review
 
-## Principais recursos
+This project brings that flow together in a single local system with a clean architecture and room to evolve from deterministic local adapters into real AI-powered media providers.
 
-- `Studio` server-side para iniciar o fluxo rapidamente
-- `Tela de configurações` do sistema para preencher `.env` pela interface
-- `Review dashboard` com preview, aprovação, publicação e status operacional
-- pipeline síncrono e assíncrono
-- suporte a `FFmpeg`, `Celery`, `Redis` e `PostgreSQL`
-- integração com YouTube via OAuth oficial
-- arquitetura separada por `services`, `adapters`, `api`, `domain` e `db`
+## What it does today
 
-## Arquitetura
+The current version already supports:
+
+- YouTube OAuth 2.0 connection
+- project creation from a base idea
+- generation of briefing, script, title, description, tags, and production plan
+- preparation of media assets
+- video rendering
+- human review before publication
+- private upload to YouTube
+- public publishing and scheduling
+- basic analytics collection
+- a simple operational timeline for the project
+- a configuration screen to manage environment settings from the UI
+
+## Product flow
+
+1. Connect a YouTube channel
+2. Configure the system
+3. Create a project from a base idea
+4. Generate content
+5. Prepare assets
+6. Render the video
+7. Review everything with a human in the loop
+8. Upload as `private`
+9. Publish immediately or schedule publication
+10. Collect analytics
+
+## Main interfaces
+
+### Studio
+
+The Studio is the entry point for the workflow.
+
+URL:
+
+```text
+http://localhost:8000/api/v1/studio
+```
+
+From there, you can:
+
+- select a connected channel
+- create and prepare a project
+- jump to system configuration
+
+### System settings
+
+The system settings page lets you fill the main environment values without editing `.env` manually.
+
+URL:
+
+```text
+http://localhost:8000/api/v1/system/settings
+```
+
+It covers:
+
+- application settings
+- infrastructure settings
+- YouTube OAuth credentials
+- media and AI providers
+
+### Review dashboard
+
+The review dashboard is the operational control panel for each project.
+
+URL pattern:
+
+```text
+http://localhost:8000/api/v1/review/projects/{project_id}
+```
+
+From there, you can:
+
+- preview rendered video and thumbnail
+- inspect generated metadata
+- approve or reject
+- upload privately
+- publish or schedule
+- inspect operational events
+
+## Architecture
 
 ```text
 app/
-  api/          # rotas FastAPI e telas server-side
-  adapters/     # integrações externas e implementação concreta dos providers
-  core/         # config, segurança e infraestrutura comum
-  db/           # models, session e repositories
-  domain/       # enums e regras de domínio
-  services/     # casos de uso da aplicação
-  tasks/        # Celery e workers
+  api/          # FastAPI routes and server-rendered UI
+  adapters/     # provider integrations and concrete implementations
+  core/         # configuration, security, shared infrastructure
+  db/           # models, repositories, database session
+  domain/       # enums and domain rules
+  services/     # application use cases
+  tasks/        # Celery background tasks
 alembic/        # migrations
-tests/          # suíte automatizada
+tests/          # automated test suite
 ```
 
-Princípios do projeto:
+Design principles:
 
-- domínio sem dependência direta de frameworks
-- serviços pequenos e orientados a caso de uso
-- adapters isolando integrações externas
-- upload inicial sempre `private`
-- publicação pública somente após aprovação humana
-- sem credenciais hardcoded
+- domain and business flow are kept separate from frameworks
+- external services are isolated behind adapters
+- human approval remains part of the publishing pipeline
+- secrets are configuration-driven
+- the system is usable locally without production infrastructure
 
-## Stack
+## Tech stack
 
 - Python 3.12
 - FastAPI
@@ -64,64 +135,15 @@ Princípios do projeto:
 - Agno
 - Google APIs / OAuth
 
-## Fluxo do produto
+## Running locally
 
-1. Conectar um canal do YouTube
-2. Preencher as configurações do sistema
-3. Criar um projeto a partir de uma ideia base
-4. Gerar conteúdo
-5. Preparar assets
-6. Renderizar vídeo
-7. Revisar humanamente
-8. Subir como `private`
-9. Publicar ou agendar
-10. Coletar analytics
-
-## Interfaces
-
-### Studio
-
-Entrada principal do sistema:
-
-- URL: `http://localhost:8000/api/v1/studio`
-- permite:
-  - escolher um canal conectado
-  - criar e preparar um projeto
-  - abrir a tela de configurações
-
-### Configurações do sistema
-
-Tela para preencher variáveis importantes sem editar o `.env` manualmente:
-
-- URL: `http://localhost:8000/api/v1/system/settings`
-- cobre:
-  - dados da aplicação
-  - infraestrutura
-  - OAuth do YouTube
-  - providers de mídia e IA
-
-### Review dashboard
-
-Tela de operação do projeto:
-
-- URL: `http://localhost:8000/api/v1/review/projects/{project_id}`
-- permite:
-  - visualizar vídeo e thumbnail
-  - ajustar metadados
-  - fazer upload privado
-  - aprovar ou rejeitar
-  - publicar ou agendar
-  - acompanhar eventos operacionais
-
-## Como rodar localmente
-
-### 1. Subir banco e Redis
+### 1. Start PostgreSQL and Redis
 
 ```powershell
 docker compose up db redis -d
 ```
 
-### 2. Criar ambiente virtual
+### 2. Create a virtual environment
 
 ```powershell
 python -m venv .venv
@@ -130,15 +152,20 @@ python -m pip install -U pip
 python -m pip install -e .[dev]
 ```
 
-### 3. Configurar variáveis
-
-Copie o exemplo:
+### 3. Create your `.env`
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Depois preencha:
+For a local Windows setup with Docker only for database and Redis, a common configuration is:
+
+```env
+DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:55432/youtube_agent_os
+REDIS_URL=redis://localhost:6379/0
+```
+
+At minimum, you should fill:
 
 - `DATABASE_URL`
 - `REDIS_URL`
@@ -147,48 +174,41 @@ Depois preencha:
 - `YOUTUBE_OAUTH_CLIENT_SECRET`
 - `YOUTUBE_OAUTH_REDIRECT_URI`
 
-Se estiver rodando `Postgres` local via Docker Compose e a API fora do Docker, use:
-
-```env
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:55432/youtube_agent_os
-REDIS_URL=redis://localhost:6379/0
-```
-
-### 4. Rodar migrations
+### 4. Apply migrations
 
 ```powershell
 python -m alembic upgrade head
 ```
 
-### 5. Subir API
+### 5. Start the API
 
 ```powershell
 python -m uvicorn app.main:app --reload
 ```
 
-### 6. Subir worker
+### 6. Start the worker
 
-Em outro terminal:
+In another terminal:
 
 ```powershell
 .venv\Scripts\Activate.ps1
 python -m celery -A app.tasks.celery_app.celery_app worker -l info -Q pipeline
 ```
 
-## Rodando com Docker
+## Running with Docker
 
 ```powershell
 docker compose up --build
 ```
 
-Serviços:
+Services included:
 
 - `api`
 - `worker`
 - `db`
 - `redis`
 
-## Comandos úteis
+## Useful commands
 
 ```bash
 make install
@@ -203,33 +223,33 @@ make docker-up
 make docker-down
 ```
 
-## OAuth do YouTube
+## YouTube OAuth setup
 
-O fluxo usa OAuth 2.0 oficial do Google.
+The application uses official Google OAuth 2.0 for YouTube.
 
-Passos:
+Typical setup:
 
-1. criar projeto no Google Cloud
-2. ativar YouTube Data API v3
-3. configurar a tela de consentimento OAuth
-4. criar um `OAuth Client ID` do tipo `Web application`
-5. cadastrar exatamente:
+1. create a Google Cloud project
+2. enable YouTube Data API v3
+3. configure the OAuth consent screen
+4. create a `Web application` OAuth client
+5. register this exact redirect URI:
 
 ```text
 http://localhost:8000/api/v1/oauth/youtube/callback
 ```
 
-Depois, no app:
+Then open:
 
-- abrir `http://localhost:8000/api/v1/oauth/youtube/authorize`
-- concluir o consentimento
-- validar o callback
+```text
+http://localhost:8000/api/v1/oauth/youtube/authorize
+```
 
-## Providers de mídia
+## Media providers
 
-### Modo local e barato
+### Local development mode
 
-Bom para desenvolvimento:
+This is the cheapest and easiest mode for local development:
 
 ```env
 THUMBNAIL_PROVIDER=deterministic
@@ -239,12 +259,12 @@ TTS_VOICE_NAME=pt-BR-AntonioNeural
 TTS_RATE=0
 ```
 
-### Modo Google Cloud / Vertex AI
+### Google Cloud / Vertex AI mode
 
-Quando quiser ir para geração mais moderna:
+For more advanced media generation:
 
 ```env
-GOOGLE_CLOUD_PROJECT=seu-projeto
+GOOGLE_CLOUD_PROJECT=your-project
 GOOGLE_CLOUD_LOCATION=us-central1
 THUMBNAIL_PROVIDER=vertex_imagen
 VIDEO_PROVIDER=vertex_veo
@@ -260,61 +280,48 @@ GOOGLE_TTS_LANGUAGE_CODE=pt-BR
 GOOGLE_TTS_SPEAKING_RATE=1.0
 ```
 
-Observações:
+Notes:
 
-- exige ADC configurado
-- exige billing ativo no Google Cloud
-- `Imagen`, `Veo` e `Google TTS` geram custo real
+- ADC must be configured
+- billing must be active in Google Cloud
+- Imagen, Veo, and Google TTS generate real cost
 
-## Qualidade e validação
+## Quality checks
 
-O projeto roda com:
+The project includes:
 
 - `ruff`
 - `mypy`
 - `pytest`
 
-Última validação local desta versão:
+Latest local validation for this version:
 
 - `57 passed`
-- `mypy` sem erros
-- `ruff` sem erros
+- `mypy` clean
+- `ruff` clean
 
-## Segurança
+## Security notes
 
-Antes de publicar o repositório:
+Before making the repository public:
 
-- não suba `.env`
-- não exponha `client_secret`, `secret_key` ou tokens
-- se alguma credencial foi mostrada durante testes, rotacione
-- revise variáveis locais e histórico de terminal
+- never commit `.env`
+- never expose client secrets, tokens, or internal keys
+- rotate any credential that may have been exposed during development
+- review local shell history if sensitive values were typed manually
 
-## Status atual
+## Current status
 
-O produto já entrega:
+This is already a functional MVP, not just a code sketch.
 
-- OAuth com YouTube
-- criação de projetos
-- geração de conteúdo
-- preparo de assets
-- render
-- revisão humana
-- upload privado
-- publicação
-- agendamento
-- analytics básicos
-- timeline operacional
-- configuração do sistema pela interface
+It still has room to evolve in areas like:
 
-## Próximos passos naturais
+- operator authentication
+- external asset storage
+- richer observability
+- deeper analytics history
+- staging and production deployment
+- more cost-efficient generative media strategies
 
-- autenticação própria de operadores
-- storage externo para assets
-- observabilidade mais forte
-- histórico de analytics mais rico
-- deploy de staging e produção
-- redução de custos para providers generativos
+## License
 
-## Licença
-
-Defina aqui a licença desejada antes de publicar em produção ou abrir para terceiros.
+Choose the license that best matches how you want to share the project before promoting it publicly.
