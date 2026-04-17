@@ -324,4 +324,4 @@ It still has room to evolve in areas like:
 
 ## License
 
-Choose the license that best matches how you want to share the project before promoting it publicly.
+This project is released under the MIT License. See [`LICENSE`](LICENSE).
